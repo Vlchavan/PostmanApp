@@ -1,0 +1,668 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple API Tester</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="~/js/postman.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .container-wrapper {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .tab-button.active {
+            apply bg-blue-500 text-white;
+        }
+        /* Custom scrollbar for textareas/pre tags */
+        textarea::-webkit-scrollbar,
+        pre::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        textarea::-webkit-scrollbar-track,
+        pre::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb,
+        pre::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover,
+        pre::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Tree view specific styles */
+        .tree-node {
+            padding-left: 1.5rem;
+            line-height: 1.8;
+            cursor: pointer;
+        }
+        .tree-node.collapsed > .children {
+            display: none;
+        }
+        .tree-node .toggle-icon {
+            display: inline-block;
+            width: 1em;
+            text-align: center;
+            margin-right: 0.25rem;
+        }
+        .tree-node:not(.leaf) > .content-line .toggle-icon::before {
+            content: '►'; /* Collapsed */
+        }
+        .tree-node.expanded:not(.leaf) > .content-line .toggle-icon::before {
+            content: '▼'; /* Expanded */
+        }
+        .tree-node.leaf .toggle-icon {
+            visibility: hidden; /* Hide toggle for leaf nodes */
+        }
+        .key-text {
+            color: #4a4a4a;
+            font-weight: 500;
+        }
+        .value-text {
+            color: #059669; /* Green for string values */
+        }
+        .number-text {
+            color: #d97706; /* Orange for numbers */
+        }
+        .boolean-text {
+            color: #1d4ed8; /* Blue for booleans */
+        }
+        .null-text {
+            color: #9ca3af; /* Gray for null */
+        }
+        .object-array-text {
+            color: #6d28d9; /* Purple for objects/arrays */
+        }
+        .checkbox-wrapper {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 0.5rem;
+        }
+        .checkbox-wrapper input[type="checkbox"] {
+            margin-right: 0.25rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <div class="container-wrapper">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">API Request Tester</h1>
+
+        <!-- Request Section -->
+        <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+            <div class="flex items-center space-x-4 mb-4">
+                <select id="method" class="w-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="PATCH">PATCH</option>
+                    <option value="HEAD">HEAD</option>
+                    <option value="OPTIONS">OPTIONS</option>
+                </select>
+                <input type="text" id="url" placeholder="Enter URL (e.g., https://jsonplaceholder.typicode.com/posts/1)" class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                <button id="sendRequest" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105">Send</button>
+            </div>
+
+            <!-- Headers Section -->
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">Headers</h2>
+                <div id="headersContainer" class="space-y-2">
+                    <div class="flex space-x-2">
+                        <input type="text" placeholder="Key" class="header-key p-2 border border-gray-300 rounded-lg w-1/2 focus:outline-none focus:ring-1 focus:ring-gray-400">
+                        <input type="text" placeholder="Value" class="header-value p-2 border border-gray-300 rounded-lg w-1/2 focus:outline-none focus:ring-1 focus:ring-gray-400">
+                        <button class="remove-header-row px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-200" title="Remove Header">X</button>
+                    </div>
+                </div>
+                <button id="addHeader" class="mt-3 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-200">Add Header</button>
+                <div class="mt-4 p-3 bg-blue-100 rounded-lg text-blue-800 text-sm">
+                    <p class="font-medium">Authentication Headers:</p>
+                    <p class="mt-1">For Bearer Token: Key = `Authorization`, Value = `Bearer YOUR_TOKEN_HERE`</p>
+                    <p>For Basic Auth: Key = `Authorization`, Value = `Basic BASE64_ENCODED_USERNAME_PASSWORD`</p>
+                </div>
+            </div>
+
+            <!-- Request Body Section -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">Request Body</h2>
+                <textarea id="requestBody" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-y shadow-sm" placeholder="Enter request body (e.g., JSON or XML) for POST/PUT requests"></textarea>
+            </div>
+        </div>
+
+        <!-- Response Section -->
+        <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Response</h2>
+
+            <!-- Response Tabs -->
+            <div class="flex border-b border-gray-200 mb-4">
+                <button id="rawTab" class="tab-button px-6 py-3 text-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-t-lg transition duration-200 active">Raw</button>
+                <button id="jsonTab" class="tab-button px-6 py-3 text-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-t-lg transition duration-200">JSON Tree</button>
+                <button id="xmlTab" class="tab-button px-6 py-3 text-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-t-lg transition duration-200">XML Tree</button>
+                <button id="htmlTab" class="tab-button px-6 py-3 text-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-t-lg transition duration-200">HTML</button>
+                <button id="parsedDataTab" class="tab-button px-6 py-3 text-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-t-lg transition duration-200">Selected Data</button>
+            </div>
+
+            <!-- Response Content Areas -->
+            <div id="responseContent" class="space-y-4">
+                <!-- Raw Response -->
+                <pre id="rawResponse" class="response-panel active bg-gray-800 text-white p-4 rounded-lg overflow-auto text-sm max-h-96 min-h-[100px]">Waiting for response...</pre>
+
+                <!-- JSON Tree View -->
+                <div id="jsonTreeResponse" class="response-panel hidden bg-white p-4 rounded-lg overflow-auto max-h-96 min-h-[100px] border border-gray-200">
+                    <p class="text-gray-500">JSON tree will appear here.</p>
+                </div>
+
+                <!-- XML Tree View -->
+                <div id="xmlTreeResponse" class="response-panel hidden bg-white p-4 rounded-lg overflow-auto max-h-96 min-h-[100px] border border-gray-200">
+                    <p class="text-gray-500">XML tree will appear here.</p>
+                </div>
+
+                <!-- HTML View (in an iframe to avoid script conflicts) -->
+                <div id="htmlResponseContainer" class="response-panel hidden bg-white p-4 rounded-lg max-h-96 min-h-[100px] border border-gray-200">
+                    <iframe id="htmlResponseFrame" class="w-full h-full border-none" sandbox="allow-same-origin allow-scripts"></iframe>
+                    <p class="text-gray-500 mt-2">HTML content will be displayed in the iframe above.</p>
+                </div>
+
+                <!-- Selected Data Table -->
+                <div id="parsedDataTable" class="response-panel hidden bg-white p-4 rounded-lg overflow-auto max-h-96 min-h-[100px] border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parameter</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selectedDataTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">No data selected yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="responseStatus" class="mt-4 text-sm font-medium text-gray-600">Status: N/A</div>
+            <div id="responseTime" class="mt-2 text-sm font-medium text-gray-600">Time: N/A</div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const urlInput = document.getElementById('url');
+        const methodSelect = document.getElementById('method');
+        const sendRequestBtn = document.getElementById('sendRequest');
+        const headersContainer = document.getElementById('headersContainer');
+        const addHeaderBtn = document.getElementById('addHeader');
+        const requestBodyInput = document.getElementById('requestBody');
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const responsePanels = document.querySelectorAll('.response-panel');
+        const rawResponsePre = document.getElementById('rawResponse');
+        const jsonTreeResponseDiv = document.getElementById('jsonTreeResponse');
+        const xmlTreeResponseDiv = document.getElementById('xmlTreeResponse');
+        const htmlResponseFrame = document.getElementById('htmlResponseFrame');
+        const selectedDataTableBody = document.getElementById('selectedDataTableBody');
+        const responseStatusDiv = document.getElementById('responseStatus');
+        const responseTimeDiv = document.getElementById('responseTime');
+
+        // --- Header Management ---
+        /**
+         * Adds a new row for header key-value input.
+         * param{string} key - Initial value for the key input.
+         * param{string} value - Initial value for the value input.
+         */
+        function addHeaderRow(key = '', value = '') {
+            const headerRow = document.createElement('div');
+            headerRow.className = 'flex space-x-2 items-center';
+            headerRow.innerHTML = `
+                <input type="text" placeholder="Key" value="${key}" class="header-key p-2 border border-gray-300 rounded-lg w-1/2 focus:outline-none focus:ring-1 focus:ring-gray-400">
+                <input type="text" placeholder="Value" value="${value}" class="header-value p-2 border border-gray-300 rounded-lg w-1/2 focus:outline-none focus:ring-1 focus:ring-gray-400">
+                <button class="remove-header-row px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-200" title="Remove Header">X</button>
+            `;
+            headersContainer.appendChild(headerRow);
+
+            // Add event listener for removing the row
+            headerRow.querySelector('.remove-header-row').addEventListener('click', () => {
+                headerRow.remove();
+            });
+        }
+
+        // Add initial header row
+        addHeaderRow('Content-Type', 'application/json');
+
+        // Event listener for "Add Header" button
+        addHeaderBtn.addEventListener('click', () => addHeaderRow());
+
+        // --- Tab Switching ---
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Deactivate all tab buttons and hide all panels
+                tabButtons.forEach(btn => btn.classList.remove('active', 'bg-blue-500', 'text-white'));
+                responsePanels.forEach(panel => panel.classList.add('hidden'));
+
+                // Activate clicked tab button
+                button.classList.add('active', 'bg-blue-500', 'text-white');
+
+                // Show corresponding panel
+                const panelId = button.id.replace('Tab', 'Response'); // e.g., 'rawTab' -> 'rawResponse'
+                const targetPanel = document.getElementById(panelId) || document.getElementById(button.id.replace('Tab', 'Table')); // For parsedDataTable
+                if (targetPanel) {
+                    targetPanel.classList.remove('hidden');
+                } else if (button.id === 'htmlTab') {
+                     document.getElementById('htmlResponseContainer').classList.remove('hidden');
+                } else if (button.id === 'parsedDataTab') {
+                    document.getElementById('parsedDataTable').classList.remove('hidden');
+                }
+            });
+        });
+
+        // --- Request Sending Logic ---
+        sendRequestBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            const method = methodSelect.value;
+            const requestBody = requestBodyInput.value.trim();
+
+            if (!url) {
+                rawResponsePre.textContent = 'Error: Please enter a URL.';
+                responseStatusDiv.textContent = 'Status: N/A';
+                responseTimeDiv.textContent = 'Time: N/A';
+                return;
+            }
+
+            rawResponsePre.textContent = 'Sending request...';
+            responseStatusDiv.textContent = 'Status: Sending...';
+            responseTimeDiv.textContent = 'Time: N/A';
+            jsonTreeResponseDiv.innerHTML = '<p class="text-gray-500">JSON tree will appear here.</p>';
+            xmlTreeResponseDiv.innerHTML = '<p class="text-gray-500">XML tree will appear here.</p>';
+            htmlResponseFrame.srcdoc = ''; // Clear iframe
+            selectedDataTableBody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">No data selected yet.</td></tr>';
+
+            const headers = {};
+            document.querySelectorAll('#headersContainer .flex').forEach(row => {
+                const keyInput = row.querySelector('.header-key');
+                const valueInput = row.querySelector('.header-value');
+                if (keyInput && valueInput && keyInput.value.trim()) {
+                    headers[keyInput.value.trim()] = valueInput.value.trim();
+                }
+            });
+
+            const requestOptions = {
+                method: method,
+                headers: new Headers(headers) // Use Headers object for proper header handling
+            };
+
+            if (['POST', 'PUT', 'PATCH'].includes(method) && requestBody) {
+                requestOptions.body = requestBody;
+            }
+
+            const startTime = performance.now();
+            try {
+                // Using fetch API directly. In a real .NET Core MVC app, this would hit your backend controller.
+                // For demonstration, we're making a direct fetch.
+                const response = await fetch(url, requestOptions);
+                const endTime = performance.now();
+                const timeTaken = (endTime - startTime).toFixed(2);
+
+                const rawText = await response.text();
+
+                rawResponsePre.textContent = rawText;
+                responseStatusDiv.textContent = `Status: ${response.status} ${response.statusText}`;
+                responseTimeDiv.textContent = `Time: ${timeTaken} ms`;
+
+                // Try to parse as JSON
+                try {
+                    const jsonData = JSON.parse(rawText);
+                    jsonTreeResponseDiv.innerHTML = ''; // Clear previous content
+                    jsonTreeResponseDiv.appendChild(buildJsonTree(jsonData));
+                } catch (e) {
+                    jsonTreeResponseDiv.innerHTML = '<p class="text-gray-500">Not valid JSON or no JSON response.</p>';
+                }
+
+                // Try to parse as XML (basic check)
+                if (rawText.trim().startsWith('<') && rawText.trim().endsWith('>') && rawText.includes('<') && rawText.includes('/>')) {
+                    // This is a very basic heuristic. A robust XML parser is needed for complex cases.
+                    xmlTreeResponseDiv.innerHTML = '';
+                    xmlTreeResponseDiv.appendChild(buildXmlTree(rawText));
+                } else {
+                    xmlTreeResponseDiv.innerHTML = '<p class="text-gray-500">Not valid XML or no XML response.</p>';
+                }
+
+                // Display HTML if content-type is HTML or looks like HTML
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/html')) {
+                    htmlResponseFrame.srcdoc = rawText;
+                } else if (rawText.trim().startsWith('<!DOCTYPE html>') || rawText.trim().startsWith('<html')) {
+                    htmlResponseFrame.srcdoc = rawText;
+                } else {
+                    htmlResponseFrame.srcdoc = '';
+                    document.getElementById('htmlResponseContainer').querySelector('p').textContent = 'Not an HTML response.';
+                }
+
+
+            } catch (error) {
+                const endTime = performance.now();
+                const timeTaken = (endTime - startTime).toFixed(2);
+                rawResponsePre.textContent = `Error: ${error.message}`;
+                responseStatusDiv.textContent = `Status: Failed`;
+                responseTimeDiv.textContent = `Time: ${timeTaken} ms`;
+                jsonTreeResponseDiv.innerHTML = '<p class="text-red-500">Failed to fetch response or invalid JSON/XML.</p>';
+                xmlTreeResponseDiv.innerHTML = '<p class="text-red-500">Failed to fetch response or invalid JSON/XML.</p>';
+                htmlResponseFrame.srcdoc = '';
+                document.getElementById('htmlResponseContainer').querySelector('p').textContent = 'Failed to fetch response.';
+            }
+        });
+
+        // --- JSON Tree View Logic ---
+        let selectedJsonData = {}; // Stores data selected from JSON tree
+
+        /**
+         * Builds a JSON tree structure with checkboxes.
+         * param{any} data - The JSON data.
+         * param{string} [path='root'] - The current path in the JSON structure.
+         * returns {HTMLElement} The root div element of the tree.
+         */
+        function buildJsonTree(data, path = 'root') {
+            const rootContainer = document.createElement('div');
+            rootContainer.className = 'json-tree-root';
+
+            function createNode(key, value, currentPath) {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'tree-node flex items-baseline'; // Use flex for alignment
+
+                const contentSpan = document.createElement('span');
+                contentSpan.className = 'content-line flex items-baseline flex-grow'; // Make content take available width
+
+                const checkboxWrapper = document.createElement('span');
+                checkboxWrapper.className = 'checkbox-wrapper';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.dataset.path = currentPath; // Store the full path to the value
+                checkbox.dataset.key = key; // Store the current key
+                checkbox.addEventListener('change', (event) => handleCheckboxChange(event, value));
+                checkboxWrapper.appendChild(checkbox);
+
+                const toggleIcon = document.createElement('span');
+                toggleIcon.className = 'toggle-icon';
+
+                let valueDisplay = '';
+                let valueClass = '';
+
+                if (Array.isArray(value)) {
+                    valueDisplay = `[${value.length}]`;
+                    valueClass = 'object-array-text';
+                    nodeDiv.classList.add('collapsed'); // Start collapsed
+                    nodeDiv.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) { // Don't toggle when clicking checkbox
+                            nodeDiv.classList.toggle('collapsed');
+                            nodeDiv.classList.toggle('expanded');
+                        }
+                    });
+                } else if (typeof value === 'object' && value !== null) {
+                    valueDisplay = `{${Object.keys(value).length}}`;
+                    valueClass = 'object-array-text';
+                    nodeDiv.classList.add('collapsed'); // Start collapsed
+                    nodeDiv.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            nodeDiv.classList.toggle('collapsed');
+                            nodeDiv.classList.toggle('expanded');
+                        }
+                    });
+                } else {
+                    nodeDiv.classList.add('leaf'); // Mark as leaf node
+                    if (typeof value === 'string') {
+                        valueDisplay = `"${value}"`;
+                        valueClass = 'value-text';
+                    } else if (typeof value === 'number') {
+                        valueDisplay = value;
+                        valueClass = 'number-text';
+                    } else if (typeof value === 'boolean') {
+                        valueDisplay = value;
+                        valueClass = 'boolean-text';
+                    } else if (value === null) {
+                        valueDisplay = 'null';
+                        valueClass = 'null-text';
+                    } else {
+                        valueDisplay = String(value); // Fallback for other types
+                        valueClass = 'value-text';
+                    }
+                }
+
+                if (key !== null) { // For root node, key is null
+                    contentSpan.appendChild(toggleIcon);
+                    contentSpan.appendChild(checkboxWrapper);
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'key-text mr-1';
+                    keySpan.textContent = `${key}: `;
+                    contentSpan.appendChild(keySpan);
+                } else {
+                    // For root, just the value and toggle (if array/object)
+                    if (typeof value === 'object' && value !== null) {
+                        contentSpan.appendChild(toggleIcon);
+                        contentSpan.appendChild(checkboxWrapper); // Add checkbox even for root object/array
+                    } else {
+                        // If root is a primitive, no toggle/checkbox needed
+                        nodeDiv.classList.add('leaf');
+                    }
+                }
+
+                const valueSpan = document.createElement('span');
+                valueSpan.className = valueClass;
+                valueSpan.textContent = valueDisplay;
+                contentSpan.appendChild(valueSpan);
+
+                nodeDiv.appendChild(contentSpan);
+
+                if (typeof value === 'object' && value !== null) {
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = 'children ml-6 border-l border-gray-200 pl-2'; // Indent children
+
+                    if (Array.isArray(value)) {
+                        value.forEach((item, index) => {
+                            childrenDiv.appendChild(createNode(index.toString(), item, `${currentPath}[${index}]`));
+                        });
+                    } else {
+                        for (const childKey in value) {
+                            if (Object.prototype.hasOwnProperty.call(value, childKey)) {
+                                childrenDiv.appendChild(createNode(childKey, value[childKey], `${currentPath}.${childKey}`));
+                            }
+                        }
+                    }
+                    nodeDiv.appendChild(childrenDiv);
+                }
+                return nodeDiv;
+            }
+
+            // Start building from the root
+            rootContainer.appendChild(createNode(null, data, path)); // null for root key
+            return rootContainer;
+        }
+
+        /**
+         * Handles checkbox change events for JSON tree nodes.
+         * Updates the selectedJsonData and refreshes the table.
+         * param{Event} event - The change event.
+         * param{any} value - The actual value associated with the checkbox.
+         */
+        function handleCheckboxChange(event, value) {
+            const checkbox = event.target;
+            const path = checkbox.dataset.path;
+            const key = checkbox.dataset.key; // The key for this specific node
+
+            if (checkbox.checked) {
+                // If a key exists, use it. Otherwise, it's a root level object/array.
+                // For nested objects/arrays, the path ensures uniqueness.
+                selectedJsonData[path] = value;
+            } else {
+                delete selectedJsonData[path];
+            }
+            updateSelectedDataTable();
+        }
+
+        /**
+         * Updates the table displaying selected JSON data.
+         */
+        function updateSelectedDataTable() {
+            selectedDataTableBody.innerHTML = ''; // Clear existing rows
+
+            if (Object.keys(selectedJsonData).length === 0) {
+                selectedDataTableBody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">No data selected yet.</td></tr>';
+                return;
+            }
+
+            for (const path in selectedJsonData) {
+                const value = selectedJsonData[path];
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50'; // Add hover effect
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${path}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${typeof value === 'object' ? JSON.stringify(value) : value}</td>
+                `;
+                selectedDataTableBody.appendChild(row);
+            }
+        }
+
+        // --- Basic XML Tree View Logic (Simplified) ---
+        /**
+         * Builds a very basic XML tree structure (visual only, no checkboxes for simplicity).
+         * This is a simplified parser and won't handle all XML complexities.
+         * param{string} xmlString - The XML string.
+         * returns {HTMLElement} The root div element of the XML tree.
+         */
+        function buildXmlTree(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            const root = xmlDoc.documentElement;
+
+            if (!root || xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-red-500';
+                errorDiv.textContent = 'Error parsing XML. Please check syntax.';
+                return errorDiv;
+            }
+
+            function createXmlElementNode(element, indent = 0) {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = `tree-node xml-node collapsed`; // Default to collapsed
+
+                const contentLine = document.createElement('span');
+                contentLine.className = 'content-line';
+
+                const toggleIcon = document.createElement('span');
+                toggleIcon.className = 'toggle-icon';
+
+                const tagNameSpan = document.createElement('span');
+                tagNameSpan.className = 'key-text';
+                tagNameSpan.textContent = `<${element.nodeName}`;
+
+                const attributes = element.attributes;
+                for (let i = 0; i < attributes.length; i++) {
+                    const attr = attributes[i];
+                    const attrSpan = document.createElement('span');
+                    attrSpan.className = 'text-blue-600';
+                    attrSpan.textContent = ` ${attr.name}="${attr.value}"`;
+                    tagNameSpan.appendChild(attrSpan);
+                }
+                tagNameSpan.textContent += '>';
+
+                contentLine.appendChild(toggleIcon);
+                contentLine.appendChild(tagNameSpan);
+                nodeDiv.appendChild(contentLine);
+
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'children ml-6 border-l border-gray-200 pl-2';
+
+                let hasChildElements = false;
+                let textContent = '';
+
+                // Iterate through child nodes to distinguish elements from text
+                Array.from(element.childNodes).forEach(childNode => {
+                    if (childNode.nodeType === Node.ELEMENT_NODE) {
+                        hasChildElements = true;
+                        childrenContainer.appendChild(createXmlElementNode(childNode, indent + 1));
+                    } else if (childNode.nodeType === Node.TEXT_NODE && childNode.nodeValue.trim()) {
+                        textContent += childNode.nodeValue.trim();
+                    }
+                });
+
+                if (textContent) {
+                    const textNodeSpan = document.createElement('span');
+                    textNodeSpan.className = 'value-text';
+                    textNodeSpan.textContent = textContent;
+                    childrenContainer.appendChild(textNodeSpan);
+                }
+
+                if (hasChildElements || textContent) {
+                    nodeDiv.appendChild(childrenContainer);
+                    nodeDiv.addEventListener('click', (e) => {
+                        // Toggle collapse/expand, but not if clicking on text content directly
+                        if (!e.target.classList.contains('value-text') && !e.target.classList.contains('text-blue-600')) {
+                             nodeDiv.classList.toggle('collapsed');
+                             nodeDiv.classList.toggle('expanded');
+                        }
+                    });
+                } else {
+                    nodeDiv.classList.add('leaf'); // No children or text, mark as leaf
+                    nodeDiv.querySelector('.toggle-icon').style.visibility = 'hidden'; // Hide toggle for true leaves
+                }
+                 // Add closing tag if it has children or text content
+                if (hasChildElements || textContent) {
+                    const closeTagSpan = document.createElement('span');
+                    closeTagSpan.className = 'key-text block mt-1'; // Use block to place on new line
+                    closeTagSpan.textContent = `</${element.nodeName}>`;
+                    nodeDiv.appendChild(closeTagSpan);
+                } else {
+                     // For empty tags like <tag/>, update the opening tag
+                     tagNameSpan.textContent = `<${element.nodeName}`;
+                     for (let i = 0; i < attributes.length; i++) {
+                         const attr = attributes[i];
+                         const attrSpan = document.createElement('span');
+                         attrSpan.className = 'text-blue-600';
+                         attrSpan.textContent = ` ${attr.name}="${attr.value}"`;
+                         tagNameSpan.appendChild(attrSpan);
+                     }
+                     tagNameSpan.textContent += '/>'; // Self-closing tag
+                }
+
+
+                return nodeDiv;
+            }
+
+            const xmlTreeContainer = document.createElement('div');
+            xmlTreeContainer.className = 'xml-tree-root';
+            xmlTreeContainer.appendChild(createXmlElementNode(root));
+            return xmlTreeContainer;
+        }
+
+        // --- Initial State and Example ---
+        // Set an example URL and body for quick testing
+        urlInput.value = 'https://jsonplaceholder.typicode.com/posts/1';
+        methodSelect.value = 'GET';
+        // Remove content type header as it's not needed for GET
+        headersContainer.innerHTML = ''; // Clear default headers
+        addHeaderRow(); // Add a blank header row
+
+        // Example for POST request
+        // urlInput.value = 'https://jsonplaceholder.typicode.com/posts';
+        // methodSelect.value = 'POST';
+        // requestBodyInput.value = JSON.stringify({
+        //     title: 'foo',
+        //     body: 'bar',
+        //     userId: 1,
+        // }, null, 2); // Pretty print JSON
+
+    </script>
+</body>
+</html>
