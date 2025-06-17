@@ -1,66 +1,45 @@
-//var builder = WebApplication.CreateBuilder(args);
-
-//// Add services to the container.
-//builder.Services.AddControllersWithViews();
-
-//var app = builder.Build();
-
-//// Configure the HTTP request pipeline.
-//if (!app.Environment.IsDevelopment())
-//{
-//    app.UseExceptionHandler("/Home/Error");
-//}
-//app.UseStaticFiles();
-
-//app.UseRouting();
-
-//app.UseAuthorization();
-
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-//app.Run();
-
 // Program.cs
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+// Configures MVC, including views.
 builder.Services.AddControllersWithViews();
-builder.Services.AddHttpClient(); // Important: Adds HttpClientFactory for making HTTP requests from backend (if you implement proxy)
 
-// Add CORS policy if you plan to use a backend proxy that frontend will call
-// or if you want to allow requests from specific origins during development.
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.AllowAnyOrigin() // In production, restrict this to your frontend's domain, e.g., WithOrigins("http://localhost:5000")
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
+// Register the DataParsingService as a transient service.
+// Transient services are created each time they are requested.
+builder.Services.AddTransient<DataParsingService>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
+    // Use exception handler for production environments.
     app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
+// Redirects HTTP requests to HTTPS.
 app.UseHttpsRedirection();
+
+// Enables static files (e.g., CSS, JavaScript, images) to be served.
 app.UseStaticFiles();
 
+// Configures routing for the application.
 app.UseRouting();
 
-app.UseCors(); // Use the CORS policy
-
+// Enables authorization middleware.
 app.UseAuthorization();
 
+// Defines the default route pattern for MVC controllers.
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// Runs the application.
 app.Run();
