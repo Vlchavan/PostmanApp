@@ -1,0 +1,460 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Data Converter UI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .card {
+            background-color: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+
+            button:hover {
+                transform: translateY(-1px);
+            }
+
+            button:active {
+                transform: translateY(0);
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fbfdff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-6 lg:p-8">
+
+    <div class="container bg-white rounded-lg shadow-xl p-6 sm:p-8 lg:p-10">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">Dynamic Data Converter Simulator</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- JSON Input Section -->
+            <div class="card">
+                <h2 class="section-title text-blue-700">JSON Input</h2>
+                <textarea id="jsonInput"
+                          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                          placeholder="Enter JSON array (e.g., [{&quot;id&quot;:1,&quot;name&quot;:&quot;Test&quot;}])...">
+[
+  {
+    "type": "Cake",
+    "batters": ["Regular", "Chocolate", "Blueberry", "Devil's Food"],
+    "toppings": ["None", "Glazed", "Sugar", "Powdered Sugar", "Chocolate with Sprinkles", "Chocolate", "Maple"]
+  },
+  {
+    "type": "Raised",
+    "batters": ["Regular"],
+    "toppings": ["None", "Glazed", "Sugar", "Chocolate", "Maple"]
+  },
+  {
+    "type": "Old Fashioned",
+    "batters": ["Regular", "Chocolate"],
+    "toppings": ["None", "Glazed", "Chocolate", "Maple"]
+  }
+]
+                </textarea>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="convertJsonToListBtn"
+                            class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                        Convert JSON to List
+                    </button>
+                    <button id="convertJsonToDataTableBtn"
+                            class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                        Convert JSON to Grid (DataTable)
+                    </button>
+                </div>
+            </div>
+
+            <!-- XML Input Section -->
+            <div class="card">
+                <h2 class="section-title text-green-700">XML Input</h2>
+                <textarea id="xmlInput"
+                          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mb-2"
+                          placeholder="Enter XML string...">
+<Users>
+                <User Id="1" Name="Alice">
+                <Age>30</Age>
+                <City>New York</City>
+  </User>
+                <User Id="2" Name="Bob">
+                <Age>24</Age>
+                <City>London</City>
+  </User>
+                <User Id="3" Name="Charlie">
+                <Age>35</Age>
+                <City>Paris</City>
+  </User>
+</Users>
+                </textarea>
+                <input type="text" id="xmlItemElementName" value="User"
+                       class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
+                       placeholder="Enter item element name (e.g., 'User', 'Record')">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="convertXmlToListBtn"
+                            class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">
+                        Convert XML to List
+                    </button>
+                    <button id="convertXmlToDataTableBtn"
+                            class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">
+                        Convert XML to Grid (DataTable)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Section: Converted List -->
+            <div class="card lg:col-span-2">
+                <h2 class="section-title text-purple-700">Converted List Output</h2>
+                <textarea id="listOutput" readonly
+                          class="w-full p-3 border border-gray-300 rounded-md bg-gray-50 focus:outline-none mb-4"></textarea>
+                <button id="showListAsTableBtn"
+                        class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 w-full sm:w-auto">
+                    Show List as Table
+                </button>
+                <div id="listTableOutput" class="mt-4 overflow-x-auto">
+                    <!-- Tabular output will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Output Section: Converted Grid (DataTable) -->
+            <div class="card lg:col-span-2">
+                <h2 class="section-title text-orange-700">Converted Grid (DataTable) Output</h2>
+                <textarea id="dataTableOutput" readonly
+                          class="w-full p-3 border border-gray-300 rounded-md bg-gray-50 focus:outline-none"></textarea>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const jsonInput = document.getElementById('jsonInput');
+            const xmlInput = document.getElementById('xmlInput');
+            const xmlItemElementName = document.getElementById('xmlItemElementName');
+            const listOutput = document.getElementById('listOutput');
+            const dataTableOutput = document.getElementById('dataTableOutput');
+            const listTableOutput = document.getElementById('listTableOutput'); // New element for table
+
+            const convertJsonToListBtn = document.getElementById('convertJsonToListBtn');
+            const convertJsonToDataTableBtn = document.getElementById('convertJsonToDataTableBtn');
+            const convertXmlToListBtn = document.getElementById('convertXmlToListBtn');
+            const convertXmlToDataTableBtn = document.getElementById('convertXmlToDataTableBtn');
+            const showListAsTableBtn = document.getElementById('showListAsTableBtn'); // New button
+
+            let currentListData = null; // Store the parsed list data globally
+
+            // Helper to generate a table from an array of objects
+            function renderTable(data, targetElement) {
+                targetElement.innerHTML = ''; // Clear previous table
+
+                if (!data || data.length === 0) {
+                    targetElement.innerHTML = '<p class="text-gray-600">No data to display in table.</p>';
+                    return;
+                }
+
+                const table = document.createElement('table');
+                table.classList.add('min-w-full', 'bg-white', 'rounded-md', 'shadow-sm');
+
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+
+                // Collect all unique keys for headers
+                const headers = new Set();
+                data.forEach(item => {
+                    Object.keys(item).forEach(key => headers.add(key));
+                });
+                const sortedHeaders = Array.from(headers).sort(); // Optional: sort headers alphabetically
+
+                sortedHeaders.forEach(headerText => {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    th.classList.add('py-2', 'px-4', 'border-b', 'border-gray-200', 'bg-gray-50', 'text-left', 'text-sm', 'leading-4', 'font-medium', 'text-gray-600', 'uppercase', 'tracking-wider');
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    sortedHeaders.forEach(header => {
+                        const td = document.createElement('td');
+                        // Handle potential nested arrays/objects by stringifying them
+                        let cellValue = item[header];
+                        if (Array.isArray(cellValue)) {
+                            cellValue = cellValue.join(', '); // Join array elements
+                        } else if (typeof cellValue === 'object' && cellValue !== null) {
+                            cellValue = JSON.stringify(cellValue); // Stringify objects
+                        } else {
+                            cellValue = cellValue !== undefined && cellValue !== null ? String(cellValue) : ''; // Convert other types to string
+                        }
+                        td.textContent = cellValue;
+                        td.classList.add('py-2', 'px-4', 'border-b', 'border-gray-200', 'text-sm', 'text-gray-800');
+                        row.appendChild(td);
+                    });
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+
+                targetElement.appendChild(table);
+            }
+
+
+            // --- Simulation of C# DataConverter.JsonToList<T> ---
+            function simulateJsonToList(jsonString) {
+                try {
+                    const parsed = JSON.parse(jsonString);
+                    if (!Array.isArray(parsed)) {
+                        return { error: "JSON must be an array for List conversion." };
+                    }
+                    currentListData = parsed; // Store parsed data
+                    return { data: JSON.stringify(parsed, null, 2) };
+                } catch (e) {
+                    currentListData = null; // Clear on error
+                    return { error: `JSON Parse Error: ${e.message}` };
+                }
+            }
+
+            // --- Simulation of C# DataConverter.JsonToDataTable ---
+            function simulateJsonToDataTable(jsonString) {
+                try {
+                    const parsed = JSON.parse(jsonString);
+                    if (!Array.isArray(parsed)) {
+                        return { error: "JSON must be an array for DataTable conversion." };
+                    }
+                    if (parsed.length === 0) {
+                        return { data: { columns: [], rows: [] } };
+                    }
+
+                    // Dynamically collect all unique keys from all objects to form columns
+                    const allKeys = new Set();
+                    parsed.forEach(obj => {
+                        Object.keys(obj).forEach(key => allKeys.add(key));
+                    });
+                    const columns = Array.from(allKeys);
+
+                    const rows = parsed.map(obj => {
+                        const row = {};
+                        columns.forEach(col => {
+                            // Handle nested arrays by joining their elements with a comma
+                            if (Array.isArray(obj[col])) {
+                                row[col] = obj[col].join(', ');
+                            } else if (typeof obj[col] === 'object' && obj[col] !== null) {
+                                // For nested objects, stringify them or handle as needed
+                                row[col] = JSON.stringify(obj[col]);
+                            } else {
+                                row[col] = obj[col] !== undefined ? String(obj[col]) : null;
+                            }
+                        });
+                        return row;
+                    });
+
+                    // Simulate DataTable structure: columns array and rows array of objects
+                    return { data: JSON.stringify({ columns: columns, rows: rows }, null, 2) };
+                } catch (e) {
+                    return { error: `JSON Parse Error: ${e.message}` };
+                }
+            }
+
+            // --- Simulation of C# DataConverter.XmlToList<T> ---
+            function simulateXmlToList(xmlString, itemElementName) {
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+                    // Check for XML parsing errors
+                    const errorNode = xmlDoc.querySelector('parsererror');
+                    if (errorNode) {
+                        return { error: `XML Parse Error: ${errorNode.textContent}` };
+                    }
+
+                    const items = [];
+                    const elements = xmlDoc.querySelectorAll(itemElementName);
+
+                    if (elements.length === 0) {
+                        return { error: `No elements found with name '${itemElementName}'.` };
+                    }
+
+                    elements.forEach(element => {
+                        const item = {};
+                        // Get attributes
+                        Array.from(element.attributes).forEach(attr => {
+                            item[attr.name] = attr.value;
+                        });
+                        // Get child elements
+                        Array.from(element.children).forEach(child => {
+                            item[child.tagName] = child.textContent;
+                        });
+                        items.push(item);
+                    });
+
+                    currentListData = items; // Store parsed data
+                    return { data: JSON.stringify(items, null, 2) };
+                } catch (e) {
+                    currentListData = null; // Clear on error
+                    return { error: `XML Processing Error: ${e.message}` };
+                }
+            }
+
+            // --- Simulation of C# DataConverter.XmlToDataTable ---
+            function simulateXmlToDataTable(xmlString, itemElementName) {
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+                    // Check for XML parsing errors
+                    const errorNode = xmlDoc.querySelector('parsererror');
+                    if (errorNode) {
+                        return { error: `XML Parse Error: ${errorNode.textContent}` };
+                    }
+
+                    const itemElements = xmlDoc.querySelectorAll(itemElementName);
+
+                    if (itemElements.length === 0) {
+                        return { error: `No elements found with name '${itemElementName}'.` };
+                    }
+
+                    const columns = new Set();
+                    const rows = [];
+
+                    // Determine columns from all item elements' attributes and child elements
+                    itemElements.forEach(item => {
+                        Array.from(item.attributes).forEach(attr => columns.add(attr.name));
+                        Array.from(item.children).forEach(child => columns.add(child.tagName));
+                    });
+
+                    itemElements.forEach(element => {
+                        const row = {};
+                        // Populate row with attribute values
+                        Array.from(columns).forEach(colName => {
+                            const attr = element.getAttribute(colName);
+                            if (attr !== null) {
+                                row[colName] = attr;
+                            } else {
+                                // Populate row with child element values
+                                const child = element.querySelector(colName);
+                                row[colName] = child ? child.textContent : null;
+                            }
+                        });
+                        rows.push(row);
+                    });
+
+                    // Represent DataTable as an object with columns and rows for display
+                    return { data: JSON.stringify({ columns: Array.from(columns), rows: rows }, null, 2) };
+                } catch (e) {
+                    return { error: `XML Processing Error: ${e.message}` };
+                }
+            }
+
+            // Event Listeners
+            convertJsonToListBtn.addEventListener('click', () => {
+                const result = simulateJsonToList(jsonInput.value);
+                if (result.error) {
+                    listOutput.value = `Error: ${result.error}`;
+                    console.error(result.error);
+                } else {
+                    listOutput.value = result.data;
+                    dataTableOutput.value = ''; // Clear other output
+                }
+                listTableOutput.innerHTML = ''; // Clear table output
+            });
+
+            convertJsonToDataTableBtn.addEventListener('click', () => {
+                const result = simulateJsonToDataTable(jsonInput.value);
+                if (result.error) {
+                    dataTableOutput.value = `Error: ${result.error}`;
+                    console.error(result.error);
+                } else {
+                    dataTableOutput.value = result.data;
+                    listOutput.value = ''; // Clear other output
+                }
+                listTableOutput.innerHTML = ''; // Clear table output
+            });
+
+            convertXmlToListBtn.addEventListener('click', () => {
+                const result = simulateXmlToList(xmlInput.value, xmlItemElementName.value);
+                if (result.error) {
+                    listOutput.value = `Error: ${result.error}`;
+                    console.error(result.error);
+                } else {
+                    listOutput.value = result.data;
+                    dataTableOutput.value = ''; // Clear other output
+                }
+                listTableOutput.innerHTML = ''; // Clear table output
+            });
+
+            convertXmlToDataTableBtn.addEventListener('click', () => {
+                const result = simulateXmlToDataTable(xmlInput.value, xmlItemElementName.value);
+                if (result.error) {
+                    dataTableOutput.value = `Error: ${result.error}`;
+                    console.error(result.error);
+                } else {
+                    dataTableOutput.value = result.data;
+                    listOutput.value = ''; // Clear other output
+                }
+                listTableOutput.innerHTML = ''; // Clear table output
+            });
+
+            showListAsTableBtn.addEventListener('click', () => {
+                if (currentListData) {
+                    renderTable(currentListData, listTableOutput);
+                    listOutput.value = ''; // Clear text area output once table is shown
+                } else {
+                    listTableOutput.innerHTML = '<p class="text-red-500">No list data available to display as table. Please convert JSON/XML to List first.</p>';
+                    console.warn("No list data available for tabular display.");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

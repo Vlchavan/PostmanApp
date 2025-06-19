@@ -28,7 +28,11 @@ public class HomeController : Controller
         // Return an empty UploadViewModel to populate the form.
         return View(new UploadViewModel());
     }
-
+    public IActionResult Conversion()
+    {
+        // Return an empty UploadViewModel to populate the form.
+        return View(new UploadViewModel());
+    }
     /// <summary>
     /// Handles the uploaded file, parses it, and discovers available fields.
     /// POST: /Home/UploadFile
